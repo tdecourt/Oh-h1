@@ -1,6 +1,7 @@
 // ==================== Globals ====================
 const Globals = {
-	cellsMargin: 5
+	cellsMargin: 5,
+	gameSize: 4
 }
 
 // ==================== Errors ====================
@@ -73,7 +74,7 @@ class EmptyState extends State {
 
 	/**
 	 * Retourne le nouvel état de la cellule
-	 * @returns {State} Nouvel état de la cellule
+	 * @return {State} Nouvel état de la cellule
 	 */
 	handle() {
 		return new FisrtState();
@@ -100,12 +101,12 @@ class FisrtState extends State {
 	 * @return {string} Couleur de la cellule
 	 */
 	get color() {
-		return "#34639D";
+		return "#8D1E20";
 	}
 
 	/**
 	 * Retourne le nouvel état de la cellule
-	 * @returns {State} Nouvel état de la cellule
+	 * @return {State} Nouvel état de la cellule
 	 */
 	handle() {
 		return new SecondState();
@@ -124,7 +125,7 @@ class SecondState extends State {
 	 * @return {number} Numéro d'état de la cellule
 	 */
 	get state() {
-		return 2;
+		return -1;
 	}
 
 	/**
@@ -132,12 +133,12 @@ class SecondState extends State {
 	 * @return {string} Couleur de la cellule
 	 */
 	get color() {
-		return "#8D1E20";
+		return "#34639D";
 	}
 
 	/**
 	 * Retourne le nouvel état de la cellule
-	 * @returns {State} Nouvel état de la cellule
+	 * @return {State} Nouvel état de la cellule
 	 */
 	handle() {
 		return new EmptyState();
@@ -168,18 +169,18 @@ class Cell {
 			case undefined:
 			case 0:
 				this._state = new EmptyState();
-				// this._isBlocked = false;
-				this._isBlocked = false; // DEBUG
+				this._isBlocked = false;
+				// this._isBlocked = false; // DEBUG
 				break;
 			case 1:
 				this._state = new FisrtState();
-				// this._isBlocked = true;
-				this._isBlocked = false; // DEBUG
+				this._isBlocked = true;
+				// this._isBlocked = false; // DEBUG
 				break;
 			case 2:
 				this._state = new SecondState();
-				// this._isBlocked = true;
-				this._isBlocked = false; // DEBUG
+				this._isBlocked = true;
+				// this._isBlocked = false; // DEBUG
 				break;
 
 			default:
@@ -191,7 +192,7 @@ class Cell {
 	 * Vérifie si la position donnée se trouve dans la cellule
 	 * @param {number} x position X
 	 * @param {number} y position Y
-	 * @returns Si la position est dans la cellule
+	 * @return {boolean} Si la position est dans la cellule
 	 */
 	isIn(x, y) {
 		return (
@@ -225,10 +226,12 @@ class Cell {
 	 */
 	draw(ctx) {
 		ctx.fillStyle = this._state.color;
+		ctx.lineWidth = 2;
 		ctx.beginPath();
 		ctx.roundRect(this._x, this._y, this._size, this._size, 10);
 		ctx.fill();
-		ctx.stroke();
+		if (this._isBlocked)
+			ctx.stroke();
 	}
 
 
@@ -251,7 +254,7 @@ class Game {
 	 * @param {CanvasRenderingContext2D} ctx Contexte de rendu
 	 * @throws {InvalidSizeError} L'attribut size ne peut être que pair et suppérieur à 4
 	 */
-	constructor(size, ctx) {
+	constructor(size, ctx, empty = false) {
 		this._ctx = ctx;
 		let cellSize = (ctx.canvas.width / size) - 2 * Globals.cellsMargin;
 		if (size % 2 !== 0 || size < 4) throw new InvalidSizeError("Taille de grille invalide");
@@ -263,15 +266,31 @@ class Game {
 					x: x * cellSize + 2 * x * Globals.cellsMargin + Globals.cellsMargin,
 					y: y * cellSize + 2 * y * Globals.cellsMargin + Globals.cellsMargin
 				}
-				this._grid[x][y] = new Cell(cellPos.x, cellPos.y, cellSize, this._getRandomInt(3));
+				if (!empty) this._grid[x][y] = new Cell(cellPos.x, cellPos.y, cellSize, this._getRandomInt(3));
+				else this._grid[x][y] = new Cell(cellPos.x, cellPos.y, cellSize, 0);
 			}
 		}
 	}
 
 	/**
+	 * Vérifie la validitée de la grille
+	 * @return {boolean} Validité de la grille
+	 */
+	verify() {
+		for (let x = 0; x < this._grid.length; x++) {
+			for (let y = 0; y < this._grid[x].length; y++) {
+				const cell = this._grid[y][x];
+				if (cell.state === 0) return false;
+				throw new Error('Verifieur non implémenté')
+			}
+		}
+		return true;
+	}
+
+	/**
 	 * Renvoi un nombre aléatoire entre 0 et max
 	 * @param {number} max Nombre maximum (exclus)
-	 * @returns Nombre généré
+	 * @return {number} Nombre généré
 	 */
 	_getRandomInt(max) {
 		return Math.floor(Math.random() * max);
@@ -303,7 +322,7 @@ class Game {
 		const cellIndex = this._getCellIndex(x, y);
 		const cell = this._grid[cellIndex.x][cellIndex.y];
 		cell.toggleState();
-		cell.draw(this._ctx);
+		this.draw();
 	}
 
 	/**
@@ -330,6 +349,7 @@ class Game {
 	 */
 	draw() {
 		// this.drawConsole();
+		this._ctx.clearRect(0, 0, this._ctx.canvas.width, this._ctx.canvas.height);
 		for (let x = 0; x < this._grid.length; x++) {
 			const line = this._grid[x];
 			for (let y = 0; y < line.length; y++) {
@@ -355,15 +375,52 @@ function getMousePos(canvas, evt) {
 	};
 }
 
-window.addEventListener('load', (evt) => {
+window.addEventListener('load', evt => {
 	const canvas = document.getElementById('drawingArea');
 	const ctx = canvas.getContext('2d');
 
-	const game = new Game(4, ctx);
+	let game = new Game(Globals.gameSize, ctx);
 	game.draw(ctx);
 
-	canvas.addEventListener('click', (evt) => {
+	document.getElementById('solve').addEventListener('click', evt => {
+		console.log('Solve');
+	})
+
+	document.getElementById('verify').addEventListener('click', evt => {
+		console.log(game.verify());
+	})
+
+	document.getElementById('empty').addEventListener('click', evt => {
+		game = new Game(Globals.gameSize, ctx, true);
+		game.draw(ctx);
+	})
+
+	canvas.addEventListener('click', evt => {
 		const mousePos = getMousePos(canvas, evt);
 		game.play(mousePos.x, mousePos.y);
+	})
+
+	document.getElementById('size4').addEventListener('click', evt => {
+		Globals.gameSize = 4;
+		game = new Game(Globals.gameSize, ctx);
+		game.draw(ctx);
+	})
+
+	document.getElementById('size6').addEventListener('click', evt => {
+		Globals.gameSize = 6;
+		game = new Game(Globals.gameSize, ctx);
+		game.draw(ctx);
+	})
+
+	document.getElementById('size8').addEventListener('click', evt => {
+		Globals.gameSize = 8;
+		game = new Game(Globals.gameSize, ctx);
+		game.draw(ctx);
+	})
+
+	document.getElementById('size12').addEventListener('click', evt => {
+		Globals.gameSize = 12;
+		game = new Game(Globals.gameSize, ctx);
+		game.draw(ctx);
 	})
 });
