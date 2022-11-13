@@ -125,7 +125,7 @@ class SecondState extends State {
 	 * @return {number} Numéro d'état de la cellule
 	 */
 	get state() {
-		return -1;
+		return 2;
 	}
 
 	/**
@@ -270,6 +270,7 @@ class Game {
 				else this._grid[x][y] = new Cell(cellPos.x, cellPos.y, cellSize, 0);
 			}
 		}
+		this.draw();
 	}
 
 	/**
@@ -277,11 +278,60 @@ class Game {
 	 * @return {boolean} Validité de la grille
 	 */
 	verify() {
+		// Vérification de chaques lignes
 		for (let x = 0; x < this._grid.length; x++) {
+			let nbFirst = 0;
+			let nbSecond = 0;
+			let curState = 0;
+			let nbSame = 0;
 			for (let y = 0; y < this._grid[x].length; y++) {
 				const cell = this._grid[y][x];
-				if (cell.state === 0) return false;
-				throw new Error('Verifieur non implémenté')
+				if (cell.state === 0) { console.log('empty cell'); return false; }
+				else if (cell.state === 1) nbFirst++;
+				else if (cell.state === 2) nbSecond++;
+				else throw new Error('UnkownState : ' + cell.state);
+				// Vérification si 3 cote à cote
+				if (curState === cell.state) nbSame++;
+				else { nbSame = 0; curState = cell.state }
+				if (nbSame > 2) { console.log('3 cote à cote'); return false; }
+			}
+			if (nbFirst != nbSecond) { console.log('pas le même nombre', nbFirst, nbSecond); return false; }
+		}
+		// Vérification de chaques colones
+		for (let x = 0; x < this._grid.length; x++) {
+			let nbFirst = 0;
+			let nbSecond = 0;
+			let curState = 0;
+			let nbSame = 0;
+			for (let y = 0; y < this._grid[x].length; y++) {
+				const cell = this._grid[x][y];
+				if (cell.state === 0) { console.log('empty cell'); return false; }
+				else if (cell.state === 1) nbFirst++;
+				else if (cell.state === 2) nbSecond++;
+				else throw new Error('UnkownState : ' + cell.state);
+				// Vérification si 3 cote à cote
+				if (curState === cell.state) nbSame++;
+				else { nbSame = 0; curState = cell.state }
+				if (nbSame > 2) { console.log('3 cote à cote'); return false; }
+			}
+			if (nbFirst != nbSecond) { console.log('pas le même nombre', nbFirst, nbSecond); return false; }
+		}
+		// Vérification lignes identiques
+		for (let y = 0; y < this._grid.length; y++) {
+			for (let y2 = y + 1; y2 < this._grid.length; y2++) {
+				let nbSame = 0;
+				for (let x = 0; x < this._grid.length; x++)
+					if (this._grid[y][x].state === this._grid[y2][x].state) nbSame++;
+				if (nbSame === this._grid.length) { console.log('Same lines : ' + y + ', ' + y2); return false; }
+			}
+		}
+		// Vérification colonnes identiques
+		for (let x = 0; x < this._grid.length; x++) {
+			for (let x2 = x + 1; x2 < this._grid.length; x2++) {
+				let nbSame = 0;
+				for (let y = 0; y < this._grid.length; y++)
+					if (this._grid[x][y].state === this._grid[x2][y].state) nbSame++;
+				if (nbSame === this._grid.length) { console.log('Same lines : ' + x + ', ' + x2); return false; }
 			}
 		}
 		return true;
@@ -380,19 +430,19 @@ window.addEventListener('load', evt => {
 	const ctx = canvas.getContext('2d');
 
 	let game = new Game(Globals.gameSize, ctx);
-	game.draw(ctx);
 
 	document.getElementById('solve').addEventListener('click', evt => {
-		console.log('Solve');
+		throw new Error('Sovle function is not implemented yet');
 	})
 
 	document.getElementById('verify').addEventListener('click', evt => {
-		console.log(game.verify());
+		canvas.classList.remove('border-dark', 'border-success', 'border-danger', 'border-5');
+		if (game.verify()) canvas.classList.add('border-success', 'border-5');
+		else canvas.classList.add('border-danger', 'border-5');
 	})
 
 	document.getElementById('empty').addEventListener('click', evt => {
 		game = new Game(Globals.gameSize, ctx, true);
-		game.draw(ctx);
 	})
 
 	canvas.addEventListener('click', evt => {
@@ -403,24 +453,20 @@ window.addEventListener('load', evt => {
 	document.getElementById('size4').addEventListener('click', evt => {
 		Globals.gameSize = 4;
 		game = new Game(Globals.gameSize, ctx);
-		game.draw(ctx);
 	})
 
 	document.getElementById('size6').addEventListener('click', evt => {
 		Globals.gameSize = 6;
 		game = new Game(Globals.gameSize, ctx);
-		game.draw(ctx);
 	})
 
 	document.getElementById('size8').addEventListener('click', evt => {
 		Globals.gameSize = 8;
 		game = new Game(Globals.gameSize, ctx);
-		game.draw(ctx);
 	})
 
 	document.getElementById('size12').addEventListener('click', evt => {
 		Globals.gameSize = 12;
 		game = new Game(Globals.gameSize, ctx);
-		game.draw(ctx);
 	})
 });
